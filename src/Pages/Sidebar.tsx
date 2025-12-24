@@ -120,8 +120,8 @@ const Sidebar: React.FC = () => {
               ADMIN TOOLS
             </Typography>
             <List disablePadding>
-              {renderNavItem("User Directory", "/users", <Users />)}
-              {renderNavItem("Create Account", "/createUser", <UserPlus />)}
+              {renderNavItem("All Users", "/users", <Users />)}
+              {renderNavItem("Create User", "/createUser", <UserPlus />)}
               {renderNavItem("Priorities", "/createPriority", <ShieldPlus />)}
               {renderNavItem("Statuses", "/createStatus", <Activity />)}
             </List>
