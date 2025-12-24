@@ -1,15 +1,15 @@
 import React, { useMemo } from "react";
-import { 
-    Box, Typography, Paper, Stack, Container, 
-    Avatar, CircularProgress 
+import {
+    Box, Typography, Paper, Stack, Container,
+    Avatar, CircularProgress
 } from "@mui/material";
-import { 
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, 
-    Tooltip, ResponsiveContainer, BarChart, Bar, Cell 
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer
 } from "recharts";
 
 import { useUserContext } from "../Context/UserContext";
-import { useTicketsQuery } from "../Query/TicketsQuery"; 
+import { useTicketsQuery } from "../Query/TicketsQuery";
 import { useStatusQuery } from "../Query/StatusQuery";
 
 // אייקונים
@@ -35,7 +35,7 @@ const MAIN_GRADIENT = "linear-gradient(135deg, #4facfe 0%, #9c27b0 100%)";
 
 const AdminDashboard: React.FC = () => {
     const { user } = useUserContext();
-    
+
     // שימוש ב-as כדי ש-TypeScript יזהה את המערכים ולא ייתן שגיאת unknown
     const ticketsQuery = useTicketsQuery();
     const statusesQuery = useStatusQuery();
@@ -83,7 +83,7 @@ const AdminDashboard: React.FC = () => {
             {/* Header */}
             <Box sx={{ mb: 6 }}>
                 <Typography variant="h3" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-1.5px' }}>
-                    Welcome back, {adminName} 
+                    Welcome back, {adminName}
                 </Typography>
                 <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 500, mt: 1 }}>
                     Real-time data synchronization is active.
@@ -98,7 +98,7 @@ const AdminDashboard: React.FC = () => {
                     { label: "Resolution Rate", value: `${stats.successRate}%`, icon: <TrendingUpIcon />, growth: "Success" },
                     { label: "Team Users", value: "8 Active", icon: <PeopleAltIcon />, growth: "Stable" },
                 ].map((stat, index) => (
-                    <Paper key={index} elevation={0} sx={{ 
+                    <Paper key={index} elevation={0} sx={{
                         flex: '1 1 calc(25% - 24px)', minWidth: '220px',
                         p: 3, borderRadius: 5, border: '1px solid #f1f5f9',
                         boxShadow: '0 10px 20px rgba(0,0,0,0.02)',
@@ -118,53 +118,80 @@ const AdminDashboard: React.FC = () => {
                 ))}
             </Box>
 
-            {/* Graphs - Flexbox */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, mb: 6 }}>
-                <Paper sx={{ flex: '1 1 55%', minWidth: '350px', p: 4, borderRadius: 6, border: '1px solid #f1f5f9' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, color: '#334155' }}>Volume Analysis</Typography>
-                    <Box sx={{ width: '100%', height: 300 }}>
+            {/* Graph - AreaChart from stats.distribution */}
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 4, mb: 6 }}>
+                <Paper
+                    sx={{
+                        flex: "1 1 100%",
+                        minWidth: "350px",
+                        p: 4,
+                        borderRadius: 6,
+                        border: "1px solid #f1f5f9",
+                    }}
+                >
+                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, color: "#334155" }}>
+                        Status Load (Area)
+                    </Typography>
+
+                    <Box sx={{ width: "100%", height: 300 }}>
                         <ResponsiveContainer>
-                            <AreaChart data={stats.activityData}>
+                            <AreaChart
+                                data={stats.distribution}
+                                margin={{ top: 10, right: 20, left: 20, bottom: 10 }}
+                            >
                                 <defs>
-                                    <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#4facfe" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#4facfe" stopOpacity={0}/>
+                                    <linearGradient id="colorDist" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#4facfe" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#4facfe" stopOpacity={0.02} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8'}} />
-                                <YAxis hide />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }} />
-                                <Area type="monotone" dataKey="count" stroke="#4facfe" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </Box>
-                </Paper>
 
-                <Paper sx={{ flex: '1 1 35%', minWidth: '280px', p: 4, borderRadius: 6, border: '1px solid #f1f5f9' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, color: '#334155' }}>Status Load</Typography>
-                    <Box sx={{ width: '100%', height: 250 }}>
-                        <ResponsiveContainer>
-                            <BarChart data={stats.distribution}>
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
-                                <Tooltip cursor={{fill: 'transparent'}} />
-                                <Bar dataKey="value" radius={[10, 10, 10, 10]} barSize={40}>
-                                    {stats.distribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+
+                                <XAxis
+                                    dataKey="name"
+                                    interval={0}
+                                    padding={{ left: 20, right: 20 }}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fontSize: 12, fill: "#94a3b8" }}
+                                />
+
+                                {/* אל תסתירי, זה גם עוזר להבין שהמילוי “יורד” לאפס */}
+                                <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+
+                                <Tooltip
+                                    contentStyle={{
+                                        borderRadius: "12px",
+                                        border: "none",
+                                        boxShadow: "0 10px 15px rgba(0,0,0,0.1)",
+                                    }}
+                                />
+
+                                <Area
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#4facfe"
+                                    strokeWidth={3}
+                                    fill="url(#colorDist)"
+                                    fillOpacity={1}
+                                    baseValue={0}
+                                />
+                            </AreaChart>
+
                         </ResponsiveContainer>
                     </Box>
                 </Paper>
             </Box>
+
 
             {/* Recent Activity Section */}
             <Paper sx={{ p: 4, borderRadius: 6, border: '1px solid #f1f5f9' }}>
                 <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Live Feed</Typography>
                 <Stack spacing={2.5}>
                     {stats.recentActivity.map((ticket) => (
-                        <Box key={ticket.id} sx={{ 
+                        <Box key={ticket.id} sx={{
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                             p: 2.5, borderRadius: 4, bgcolor: '#fcfdfe', border: '1px solid #f1f5f9'
                         }}>
@@ -177,7 +204,7 @@ const AdminDashboard: React.FC = () => {
                                     <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>Ticket ID: #{ticket.id} • Verified</Typography>
                                 </Box>
                             </Stack>
-                            <Box sx={{ 
+                            <Box sx={{
                                 px: 2, py: 0.8, borderRadius: 2.5, fontWeight: 900, fontSize: '0.7rem',
                                 bgcolor: ticket.status?.name?.toLowerCase() === 'open' ? '#e0f2fe' : '#f3e8ff',
                                 color: ticket.status?.name?.toLowerCase() === 'open' ? '#0369a1' : '#7e22ce',
