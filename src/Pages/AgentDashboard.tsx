@@ -4,11 +4,13 @@ import {
     Avatar, Button, alpha, CircularProgress 
 } from "@mui/material";
 import { 
-    BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell 
+    AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid 
 } from "recharts";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useUserContext } from "../Context/UserContext";
 import { useTicketsQuery } from "../Query/TicketsQuery";
+import { getPriorityOrStatus } from "../Service/Status-Priority/getPriorityOrStatus"; // וודא שהנתיב תקין
 
 // אייקונים
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -20,25 +22,33 @@ const MAIN_GRADIENT = "linear-gradient(135deg, #4facfe 0%, #9c27b0 100%)";
 
 const AgentDashboard: React.FC = () => {
     const { user } = useUserContext();
+    const token = user?.token;
     const navigate = useNavigate();
     
-    // שליפת נתונים אמיתיים
-    const { data, isLoading } = useTicketsQuery();
-    const allTickets = (data ?? []) as any[];
+    // שליפת נתונים
+    const { data: ticketsData, isLoading: ticketsLoading } = useTicketsQuery();
+    const { data: statusesData, isLoading: statusesLoading } = useQuery({
+        queryKey: ['statuses'],
+        queryFn: () => getPriorityOrStatus<any[]>("statuses", token),
+        enabled: !!token
+    });
 
     const agentName = user?.userDetails?.name ?? "Agent";
     const agentId = user?.userDetails?.id;
 
-    // עיבוד נתונים אמיתיים של הסוכן
     const stats = useMemo(() => {
+        const allTickets = (ticketsData ?? []) as any[];
+        const allStatuses = (statusesData ?? []) as any[];
         const myTickets = allTickets.filter(t => t.assigned_to === agentId);
-        const pending = myTickets.filter(t => t.status_id === 1).length; // סטטוס פתוח
-        const completed = myTickets.filter(t => t.status_id === 2).length; // סטטוס סגור
-        
-        const chartData = [
-            { name: 'Pending', value: pending, color: '#4facfe' },
-            { name: 'Completed', value: completed, color: '#9c27b0' },
-        ];
+
+        // יצירת נתונים לגרף על בסיס כל הסטטוסים מה-API
+        const chartData = allStatuses.map(status => ({
+            name: status.name,
+            value: myTickets.filter(t => t.status_id === status.id).length
+        }));
+
+        const pending = myTickets.filter(t => t.status_id === 1).length;
+        const completed = myTickets.filter(t => t.status_id === 2).length;
 
         return { 
             total: myTickets.length, 
@@ -47,9 +57,9 @@ const AgentDashboard: React.FC = () => {
             chartData, 
             recentTickets: myTickets.slice(0, 4) 
         };
-    }, [allTickets, agentId]);
+    }, [ticketsData, statusesData, agentId]);
 
-    if (isLoading) {
+    if (ticketsLoading || statusesLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
                 <CircularProgress sx={{ color: '#4facfe' }} />
@@ -59,7 +69,7 @@ const AgentDashboard: React.FC = () => {
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
-            {/* Header - בולט עם הגרדיאנט שאת אוהבת */}
+            {/* Header */}
             <Box sx={{ 
                 mb: 6, display: 'flex', flexWrap: 'wrap', 
                 justifyContent: 'space-between', alignItems: 'center', gap: 2 
@@ -85,7 +95,7 @@ const AgentDashboard: React.FC = () => {
                 </Button>
             </Box>
 
-            {/* KPI Section - שימוש ב-Flexbox במקום Grid */}
+            {/* KPI Section */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 6 }}>
                 {[
                     { label: "Assigned To Me", value: stats.total, icon: <AssignmentIcon />, color: '#4facfe' },
@@ -109,27 +119,47 @@ const AgentDashboard: React.FC = () => {
                 ))}
             </Box>
 
-            {/* Content Section - גרף ורשימה אחד ליד השני ב-Flex */}
+            {/* Content Section */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {/* Graph Card */}
                 <Paper sx={{ flex: '1 1 500px', p: 4, borderRadius: 7, border: '1px solid #f1f5f9' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, color: '#334155' }}>Workload Distribution</Typography>
-                    <Box sx={{ width: '100%', height: 280 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, color: '#334155' }}>Status Load</Typography>
+                    <Box sx={{ width: '100%', height: 300 }}>
                         <ResponsiveContainer>
-                            <BarChart data={stats.chartData}>
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontWeight: 700}} />
-                                <Tooltip cursor={{fill: 'transparent'}} />
-                                <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={55}>
-                                    {stats.chartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
+                            <AreaChart data={stats.chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#4facfe" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#4facfe" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis 
+                                    dataKey="name" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 700}}
+                                    interval={0}
+                                />
+                                <YAxis hide domain={[0, (dataMax) => dataMax + 2]} />
+                                <Tooltip 
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="value" 
+                                    stroke="#4facfe" 
+                                    strokeWidth={4}
+                                    fillOpacity={1} 
+                                    fill="url(#colorValue)"
+                                    dot={{ r: 4, fill: '#4facfe', strokeWidth: 2, stroke: '#fff' }}
+                                    activeDot={{ r: 6 }}
+                                />
+                            </AreaChart>
                         </ResponsiveContainer>
                     </Box>
                 </Paper>
 
-                {/* Recent Feed - בדיוק כמו ב-Admin */}
+                {/* Recent Feed */}
                 <Paper sx={{ flex: '1 1 350px', p: 4, borderRadius: 7, border: '1px solid #f1f5f9' }}>
                     <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Recent Assignments</Typography>
                     <Stack spacing={2.5}>
