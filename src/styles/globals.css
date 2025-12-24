@@ -1,0 +1,68 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html,
+body {
+	font-family: "Inter";
+	background-color: #f9fafb;
+	color: #111827;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+a {
+	color: #3366ff;
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+a:hover {
+	color: #1a3a99;
+	text-decoration: underline;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #d1d5db;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #9ca3af;
+}
+
+/* Remove default button styling */
+button {
+	cursor: pointer;
+}
+
+/* Smooth transitions */
+* {
+	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Skeleton animation */
+@keyframes shimmer {
+	0% {
+		background-position: -1000px 0;
+	}
+	100% {
+		background-position: 1000px 0;
+	}
+}
+
+.MuiSkeleton-root {
+	animation: shimmer 2s infinite;
+}
