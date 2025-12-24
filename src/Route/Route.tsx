@@ -9,6 +9,7 @@ import { ShowUsers } from "../Components/ShowUsers";
 import { CreateUser } from "../Components/CreateUser";
 import AdminDashboard from "../Pages/AdminDashboard";
 import Layout from "../Pages/Layot";
+import Page404 from "../Pages/Page404";
 import ProtectedRoute from "./ProtectedRoute";
 import RootRedirect from "./RootRedirect";
 import TicketDetails from "../Pages/TicketDetails";
@@ -106,5 +107,9 @@ export const router = createBrowserRouter([
         <Layout><Status /></Layout>
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/*",
+    element: <Page404 />,
   },
 ]);

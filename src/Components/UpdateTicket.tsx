@@ -58,13 +58,15 @@ export const UpdateTicket: React.FC<Props> = ({
 }) => {
   const queryClient = useQueryClient();
   const { user } = useUserContext();
+  const navigate = useNavigate();
+
+  // בדיקת הרשאות - מנהל (admin) לעומת מזכיר/אחר
+  const isAdmin = user?.userDetails.role === 'admin';
 
   const statusesQuery = useStatusQuery();
   const prioritiesQuery = usePriorityQuery();
   const usersQuery = useUsersQuery();
-  const navigate = useNavigate();
 
-  // Casting כדי למנוע שגיאות unknown ב-TypeScript
   const statusArray = (statusesQuery.data ?? []) as StatusOrPriority[];
   const priorityArray = (prioritiesQuery.data ?? []) as StatusOrPriority[];
   const agents = ((usersQuery.data ?? []) as UserDetails[]).filter(
@@ -84,7 +86,6 @@ export const UpdateTicket: React.FC<Props> = ({
     shouldUnregister: false,
   });
 
-
   const onSubmit: SubmitHandler<TicketToUpdate> = async (formData) => {
     try {
       if (!user?.token) {
@@ -97,17 +98,23 @@ export const UpdateTicket: React.FC<Props> = ({
         return;
       }
 
-      await updateTicket(user.token, id, formData);
+      // הגנה נוספת: אם המשתמש אינו מנהל, נשלח רק את הסטטוס לעדכון
+      const dataToSubmit = isAdmin 
+        ? formData 
+        : { status_id: formData.status_id };
+
+      await updateTicket(user.token, id, dataToSubmit as TicketToUpdate);
+      
       await queryClient.invalidateQueries({ queryKey: TICKETS_QUERT_KEY });
 
       Swal.fire({
         icon: "success",
         title: "Success!",
-        text: "The ticket has been updated.",
+        text: "The ticket has been updated successfully.",
         timer: 2000,
         showConfirmButton: false,
       });
-      await queryClient.invalidateQueries({ queryKey: TICKETS_QUERT_KEY });
+      
       navigate(-1);
     } catch (error) {
       const msg = axios.isAxiosError(error)
@@ -118,7 +125,7 @@ export const UpdateTicket: React.FC<Props> = ({
     }
   };
 
-  if (statusesQuery.isLoading || prioritiesQuery.isLoading || usersQuery.isLoading) {
+  if (statusesQuery.isLoading || (isAdmin && (prioritiesQuery.isLoading || usersQuery.isLoading))) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
         <CircularProgress sx={{ color: '#4facfe' }} />
@@ -137,7 +144,6 @@ export const UpdateTicket: React.FC<Props> = ({
           overflow: 'hidden'
         }}
       >
-        {/* כותרת מעוצבת עם גרדיאנט עדין ברקע */}
         <Box sx={{ p: 3, background: alpha('#f8fafc', 0.5), borderBottom: '1px solid #f1f5f9' }}>
           <Stack direction="row" spacing={2} alignItems="center">
             <Avatar sx={{ background: MAIN_GRADIENT, width: 45, height: 45 }}>
@@ -158,26 +164,28 @@ export const UpdateTicket: React.FC<Props> = ({
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <Stack spacing={4}>
 
-              {/* שדה עדיפות */}
-              <TextField
-                select
-                label={
-                  <Stack direction="row" alignItems="center" gap={1}>
-                    <SpeedIcon sx={{ fontSize: 18 }} /> Priority
-                  </Stack>
-                }
-                fullWidth
-                error={!!errors.priority_id}
-                helperText={errors.priority_id?.message}
-                {...register("priority_id", { required: "Required", valueAsNumber: true })}
-                sx={textFieldStyle}
-              >
-                {priorityArray.map((p) => (
-                  <MenuItem key={p.id} value={p.id} sx={{ fontWeight: 600 }}>{p.name}</MenuItem>
-                ))}
-              </TextField>
+              {/* שדה עדיפות - מוצג רק למנהל */}
+              {isAdmin && (
+                <TextField
+                  select
+                  label={
+                    <Stack direction="row" alignItems="center" gap={1}>
+                      <SpeedIcon sx={{ fontSize: 18 }} /> Priority
+                    </Stack>
+                  }
+                  fullWidth
+                  error={!!errors.priority_id}
+                  helperText={errors.priority_id?.message}
+                  {...register("priority_id", { required: "Required", valueAsNumber: true })}
+                  sx={textFieldStyle}
+                >
+                  {priorityArray.map((p) => (
+                    <MenuItem key={p.id} value={p.id} sx={{ fontWeight: 600 }}>{p.name}</MenuItem>
+                  ))}
+                </TextField>
+              )}
 
-              {/* שדה סטטוס */}
+              {/* שדה סטטוס - מוצג לכולם */}
               <TextField
                 select
                 label={
@@ -196,32 +204,32 @@ export const UpdateTicket: React.FC<Props> = ({
                 ))}
               </TextField>
 
-              {/* שדה סוכן אחראי */}
-              <TextField
-                select
-                defaultValue={assigned_to}
-                label={
-                  <Stack direction="row" alignItems="center" gap={1}>
-                    <AssignmentIndIcon sx={{ fontSize: 18 }} /> Assigned Agent
-                  </Stack>
-                }
-                fullWidth
-                error={!!errors.assigned_to}
-                helperText={errors.assigned_to?.message}
-                {...register("assigned_to", { valueAsNumber: true })}
-                sx={textFieldStyle}
-              >
-
-                {agents.map((a) => (
-                  <MenuItem key={a.id} value={a.id} sx={{ fontWeight: 600 }}>
-                    {a.name} (ID: {a.id})
-                  </MenuItem>
-                ))}
-              </TextField>
+              {/* שדה סוכן אחראי - מוצג רק למנהל */}
+              {isAdmin && (
+                <TextField
+                  select
+                  defaultValue={assigned_to}
+                  label={
+                    <Stack direction="row" alignItems="center" gap={1}>
+                      <AssignmentIndIcon sx={{ fontSize: 18 }} /> Assigned Agent
+                    </Stack>
+                  }
+                  fullWidth
+                  error={!!errors.assigned_to}
+                  helperText={errors.assigned_to?.message}
+                  {...register("assigned_to", { valueAsNumber: true })}
+                  sx={textFieldStyle}
+                >
+                  {agents.map((a) => (
+                    <MenuItem key={a.id} value={a.id} sx={{ fontWeight: 600 }}>
+                      {a.name} (ID: {a.id})
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
 
               <Divider sx={{ my: 1, opacity: 0.5 }} />
 
-              {/* כפתור עדכון */}
               <Button
                 type="submit"
                 variant="contained"
@@ -255,7 +263,6 @@ export const UpdateTicket: React.FC<Props> = ({
   );
 };
 
-// עיצוב גלובלי לשדות הטקסט כדי לשמור על קו נקי
 const textFieldStyle = {
   '& .MuiOutlinedInput-root': {
     borderRadius: 4,
@@ -267,4 +274,5 @@ const textFieldStyle = {
   '& .MuiInputLabel-root': { fontWeight: 700, color: '#64748b' },
   '& .MuiInputLabel-root.Mui-focused': { color: '#4facfe' }
 };
+
 export default UpdateTicket;

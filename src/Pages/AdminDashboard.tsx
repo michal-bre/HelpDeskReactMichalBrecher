@@ -130,7 +130,7 @@ const AdminDashboard: React.FC = () => {
                     }}
                 >
                     <Typography variant="h6" sx={{ fontWeight: 800, mb: 4, color: "#334155" }}>
-                        Status Load (Area)
+                        Status Load
                     </Typography>
 
                     <Box sx={{ width: "100%", height: 300 }}>
