@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUserContext } from "../Context/UserContext";
 import { deleteTicket } from "../Service/Ticket/deleteTicket";
 import { TICKETS_QUERT_KEY } from "../Query/TicketsQuery";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   id: number;
@@ -15,6 +16,7 @@ type Props = {
 export const DeleteTicket: React.FC<Props> = ({ id, onDeleted }) => {
   const { user } = useUserContext();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const handleDelete = async () => {
     const result = await Swal.fire({
@@ -41,6 +43,7 @@ export const DeleteTicket: React.FC<Props> = ({ id, onDeleted }) => {
       Swal.fire("Deleted!", "The ticket has been deleted.", "success");
 
       onDeleted?.();
+      navigate("/tickets");
     } catch (error) {
       console.error("Deleting ticket failed", error);
 
